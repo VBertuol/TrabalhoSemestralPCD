@@ -17,6 +17,8 @@ typedef struct Trie {
     struct Trie * pointerArray [26];
 }Trie;
 
+// Função que cria um novo nodo alocado dinamicamente, setando "terminal" = false e todos os filhos como nulos
+
 Trie * newNode() {
     int i;
     Trie * newTrie = (Trie *)malloc(sizeof(Trie));
@@ -26,6 +28,9 @@ Trie * newNode() {
     }
     return newTrie;
 }
+
+// Função que recebe um nodo e um caractere a ser inserido na Trie, se o caractere for um '.', não faz nada, se for um novo caractere chama a função
+// que cria novo nodo e retorna o novo nodo, caso o caractere ja esteja alocado retorna sua posição
 
 Trie * newLetter (Trie * myTrie, char a) {
     int char_to_int = a - 97;
@@ -42,6 +47,8 @@ Trie * newLetter (Trie * myTrie, char a) {
     }
 }
 
+//Função que verifica se a posição do caractere passado existe dentro da Trie ou não, se existe retorna sua posição, se não existe retorna nulo
+
 Trie * verify (Trie * myTrie, char a) {
     int char_to_int = a - 97;
     if (a == '.') {
@@ -55,11 +62,27 @@ Trie * verify (Trie * myTrie, char a) {
     }
 }
 
+//Função que limpa a variável do tipo string de 100 posições usada para guardar URLs, a "Limpeza" é feita colocando o caractere '$' em todas as posições
+
 void clearURL (char * url) {
     int i;
     for (i = 0; i < URL; i++) {
         url[i] = '$';
     }
+    return;
+}
+
+// Função chamada ao fim da execução do programa para descalocar recursivamente toda a memória utilizada pelos nodos da Trie
+// Seu funcionamento é parecido com o percurso pós-order de uma BST, vai descendo até as folhas, libera elas e volta liberando até a raiz
+
+void clearMemory (Trie * myTrie) {
+    int i;
+    for(i = 0; i<26;i++) {
+        if (myTrie->pointerArray[i] != NULL) {
+            clearMemory(myTrie->pointerArray[i]);
+        }
+    }
+    free(myTrie);
     return;
 }
 
@@ -81,8 +104,7 @@ int main () {
 
     while (!feof(dnsFILE)) {
         clearURL(url);
-        Trie * auxTrie1 = newNode();
-        auxTrie1 = myTrie;
+        Trie * auxTrie1 = myTrie;
         for (i = 0; i < URL; i++) {
             fscanf(dnsFILE, "%c", &url[i]);
             if (url[i] == ' ') break;
@@ -97,10 +119,12 @@ int main () {
         fscanf(dnsFILE,"%c", &character);
     }
         
+    // Leitura do teclado do usuário letra por letra armazenando na string de 100 posições 'url' até que haja um "new line", 
+    // caracterizando assim como o fechamento de uma URL
+
     while (character != '*' ) {
         clearURL(url);
-        Trie * auxTrie1 = newNode();
-        auxTrie1 = myTrie;
+        Trie * auxTrie1 = myTrie;
         for (i = 0; i < URL; i++) {
             scanf("%c", &character);
             if (character == '*') break;
@@ -112,6 +136,10 @@ int main () {
             }
         }
         if (character == '*') break;
+
+    // Verificação letra a letra a URL armazenada, mandando para a função verify(), caso volte como nulo ou então a URL acabe sem achar um terminal
+    // imprime que o endereço não foi encontrado, caso contrário imprime o IP correspondente ao URL
+
         for (i = URL - 1; i >= 0; i--) {
             if (url[i] != '$') {
                 auxTrie1 = verify(auxTrie1, url[i]);
@@ -133,5 +161,7 @@ int main () {
         }
     }
     
+    clearMemory(myTrie);
+
     return 0;
 }
