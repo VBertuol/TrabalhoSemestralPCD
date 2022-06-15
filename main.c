@@ -7,15 +7,20 @@
 #include <stdlib.h>
 #define URL 100
 
+// Estrutura de um nodo da Trie, um "booleano" que diz que o nodo é terminal ou não, uma string para representar o IP caso exista
+// e um vetor de ponteiros para 26 nodos inicialmente nulos que correponde aos 26 possiveis filhos, cada um representando uma das
+// letras do alfabeto
+
 typedef struct Trie {
     int booleanTerminal;
     char IP [15];
     struct Trie * pointerArray [26];
 }Trie;
 
-Trie * newRoot() {
+Trie * newNode() {
     int i;
     Trie * newTrie = (Trie *)malloc(sizeof(Trie));
+    newTrie->booleanTerminal = 0;
     for(i = 0; i < 26; i++) {
         newTrie->pointerArray[i] = NULL;
     }
@@ -24,8 +29,11 @@ Trie * newRoot() {
 
 Trie * newLetter (Trie * myTrie, char a) {
     int char_to_int = a - 97;
+    if (a == '.') {
+        return myTrie;
+    }
     if (myTrie->pointerArray[char_to_int] == NULL) {
-        Trie * newTrie = newRoot();
+        Trie * newTrie = newNode();
         myTrie->pointerArray[char_to_int] = newTrie;
         return newTrie; 
     }
@@ -34,64 +42,96 @@ Trie * newLetter (Trie * myTrie, char a) {
     }
 }
 
-Trie * verify (Trie * myTrie, char character) {
-    int char_to_int = character - 97;
-    if (myTrie->pointerArray[char_to_int]->booleanTerminal == 1) {
-        printf ("%s", myTrie->pointerArray[char_to_int]->IP);
+Trie * verify (Trie * myTrie, char a) {
+    int char_to_int = a - 97;
+    if (a == '.') {
         return myTrie;
-    }
-    if (myTrie->pointerArray[char_to_int] != NULL) {
-        Trie * auxTrie = newRoot();
-        auxTrie = myTrie->pointerArray[char_to_int];
-        return auxTrie;
     }
     if (myTrie->pointerArray[char_to_int] == NULL) {
-        printf("nao encontrado.\n");
-        return myTrie;
+        return NULL;
     }
+    else {
+        return myTrie->pointerArray[char_to_int];
+    }
+}
+
+void clearURL (char * url) {
+    int i;
+    for (i = 0; i < URL; i++) {
+        url[i] = '$';
+    }
+    return;
 }
 
 int main () { 
     
-    Trie * myTrie = newRoot();
+    // Declaração de variáveis usadas na função main()
+
+    Trie * myTrie = newNode();
     char character;
     char url [URL];
+    int i;
+
+    // Abre o Arquivo dns.txt
 
     FILE * dnsFILE = fopen("dns.txt", "r");
    
+    // Leitura de todos os dados presentes no arquivo dns.txt, url letra por letra enviando para a função newLetter() 
+    // e no fim o IP inteiro como string, além de mudar o booleano de terminal como verdadeiro quando necessário
+
     while (!feof(dnsFILE)) {
-        Trie * auxTrie1 = newRoot();
-        fscanf(dnsFILE,"%c", &character);
-        auxTrie1 = newLetter(myTrie, character);
-        while (character != ' ') {
-            fscanf(dnsFILE,"%c", &character);
-            if (character >= 97 && character <=122) {
-                auxTrie1 = newLetter(auxTrie1, character);
+        clearURL(url);
+        Trie * auxTrie1 = newNode();
+        auxTrie1 = myTrie;
+        for (i = 0; i < URL; i++) {
+            fscanf(dnsFILE, "%c", &url[i]);
+            if (url[i] == ' ') break;
+        }
+        for (i = URL - 1; i >= 0; i--) {
+            if (url[i] != '$' && (url[i] != ' ')) {
+                auxTrie1 = newLetter(auxTrie1, url[i]);
             }
         }
+        auxTrie1->booleanTerminal = 1;
         fscanf(dnsFILE,"%s", &auxTrie1->IP[0]);
         fscanf(dnsFILE,"%c", &character);
-        auxTrie1->booleanTerminal = 1;
-        free(auxTrie1);
     }
-
-    while (character != '*') {
-        Trie * auxTrie1 = newRoot();
-        Trie * auxTrie2 = newRoot();
-        scanf("%c", &character);
-        if (character == '*') return 0;
-        auxTrie1 = verify(myTrie, character);
-        while (character != '\0') {
+        
+    while (character != '*' ) {
+        clearURL(url);
+        Trie * auxTrie1 = newNode();
+        auxTrie1 = myTrie;
+        for (i = 0; i < URL; i++) {
             scanf("%c", &character);
-            if (character >= 97 && character <=122) {
-                auxTrie2 = auxTrie1;
-                auxTrie1 = verify(auxTrie1, character);
-                if (auxTrie1 == auxTrie2) break;
+            if (character == '*') break;
+            if (character >= 97 && character <= 122) {
+                url[i] = character;
+            }
+            if (character == 10) {
+                break;
             }
         }
-        free(auxTrie1);
-        free(auxTrie2);
-        scanf("%c", &character);
+        if (character == '*') break;
+        for (i = URL - 1; i >= 0; i--) {
+            if (url[i] != '$') {
+                auxTrie1 = verify(auxTrie1, url[i]);
+                if (auxTrie1 == NULL) {
+                    printf("endereco nao encontrado.\n");
+                    break;
+                }
+                else {
+                    if (auxTrie1->booleanTerminal == 1) {
+                        printf ("%s\n", auxTrie1->IP);
+                        break;
+                    }
+                    if (auxTrie1->booleanTerminal == 0 && i == 0) {
+                        printf("endereco nao encontrado.\n");
+                        break;
+                    }
+                }
+            }
+        }
     }
+    
     return 0;
 }
