@@ -87,12 +87,12 @@ void clearURL (char * url) {
 
 void clearMemory (Trie * myTrie) {
     int i;
+    if (myTrie->point != NULL) {
+            clearMemory(myTrie->point);
+    }
     for(i = 0; i<26;i++) {
         if (myTrie->pointerArray[i] != NULL) {
             clearMemory(myTrie->pointerArray[i]);
-        }
-        if (myTrie->point != NULL) {
-            clearMemory(myTrie->point);
         }
     }
     free(myTrie);
