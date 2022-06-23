@@ -9,12 +9,13 @@
 
 // Estrutura de um nodo da Trie, um "booleano" que diz que o nodo é terminal ou não, uma string para representar o IP caso exista
 // e um vetor de ponteiros para 26 nodos inicialmente nulos que correponde aos 26 possiveis filhos, cada um representando uma das
-// letras do alfabeto
+// letras do alfabeto, e um ponteiro para uma nova Trie caso tenha um '.'
 
 typedef struct Trie {
     int booleanTerminal;
     char IP [15];
     struct Trie * pointerArray [26];
+    struct Trie * point;
 }Trie;
 
 // Função que cria um novo nodo alocado dinamicamente, setando "terminal" = false e todos os filhos como nulos
@@ -23,19 +24,25 @@ Trie * newNode() {
     int i;
     Trie * newTrie = (Trie *)malloc(sizeof(Trie));
     newTrie->booleanTerminal = 0;
+    newTrie->point = NULL;
     for(i = 0; i < 26; i++) {
         newTrie->pointerArray[i] = NULL;
     }
     return newTrie;
 }
 
-// Função que recebe um nodo e um caractere a ser inserido na Trie, se o caractere for um '.', não faz nada, se for um novo caractere chama a função
-// que cria novo nodo e retorna o novo nodo, caso o caractere ja esteja alocado retorna sua posição
+// Função que recebe um nodo e um caractere a ser inserido na Trie, se o caractere for um '.', cria uma nova Trie e retorna ou retorna uma existente, 
+// se for um novo caractere chama a função que cria novo nodo e retorna o novo nodo, caso o caractere ja esteja alocado retorna sua posição
 
 Trie * newLetter (Trie * myTrie, char a) {
     int char_to_int = a - 97;
-    if (a == '.') {
-        return myTrie;
+    if (a == '.' && myTrie->point == NULL) {
+        Trie * newTrie = newNode();
+        myTrie->point = newTrie;
+        return newTrie;
+    }
+    if (a == '.' && myTrie->point != NULL) {
+        return myTrie->point;
     }
     if (myTrie->pointerArray[char_to_int] == NULL) {
         Trie * newTrie = newNode();
@@ -51,8 +58,11 @@ Trie * newLetter (Trie * myTrie, char a) {
 
 Trie * verify (Trie * myTrie, char a) {
     int char_to_int = a - 97;
-    if (a == '.') {
-        return myTrie;
+    if (a == '.' && myTrie->point != NULL) {
+        return myTrie->point;
+    }
+    if (a == '.' && myTrie->point == NULL) {
+        return NULL;
     }
     if (myTrie->pointerArray[char_to_int] == NULL) {
         return NULL;
@@ -80,6 +90,9 @@ void clearMemory (Trie * myTrie) {
     for(i = 0; i<26;i++) {
         if (myTrie->pointerArray[i] != NULL) {
             clearMemory(myTrie->pointerArray[i]);
+        }
+        if (myTrie->point != NULL) {
+            clearMemory(myTrie->point);
         }
     }
     free(myTrie);
@@ -128,7 +141,7 @@ int main () {
         for (i = 0; i < URL; i++) {
             scanf("%c", &character);
             if (character == '*') break;
-            if (character >= 97 && character <= 122) {
+            if (character >= 97 && character <= 122 || character == '.') {
                 url[i] = character;
             }
             if (character == 10) {
@@ -148,7 +161,7 @@ int main () {
                     break;
                 }
                 else {
-                    if (auxTrie1->booleanTerminal == 1) {
+                    if (auxTrie1->booleanTerminal == 1 && i == 0) {
                         printf ("%s\n", auxTrie1->IP);
                         break;
                     }
